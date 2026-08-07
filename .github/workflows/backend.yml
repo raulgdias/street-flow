@@ -23,7 +23,7 @@ jobs:
         run: npm install
 
       - name: Gerar Cliente do Prisma
-        run: npx prisma generate
+        run: npx prisma generate --schema=apps/backend/prisma/schema.prisma
 
       - name: Build do Backend com Turbo
         run: npx turbo run build --filter=api
