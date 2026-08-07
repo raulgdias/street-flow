@@ -1,0 +1,23 @@
+{
+  "name": "street-flow",
+  "private": true,
+  "packageManager": "npm@10.8.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bash ./scripts/dev.sh",
+    "dev:parallel": "concurrently \"npm --prefix apps/api run start:dev\" \"npm --prefix apps/web run dev\"",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "concurrently": "^10.0.4",
+    "prettier": "^3.3.2",
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3"
+  }
+}
