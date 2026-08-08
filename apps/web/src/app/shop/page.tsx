@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { buildApiUrl } from '@/config/environment';
+import { buildApiUrl, normalizeImageUrl } from '@/config/environment';
 
 type Product = {
   id: string;
@@ -46,38 +46,25 @@ export default function ShopPage() {
     }
 
     fetch(buildApiUrl('/store/products'))
-      .then((res) => res.json())
-      .then((data) =>
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to load products: ${res.status}`);
+        }
+
+        const data = await res.json();
         setProducts(
           data.map((product: any) => ({
             ...product,
             price: toNumber(product.price),
             promoPrice: product.promoPrice ? toNumber(product.promoPrice) : undefined,
             stock: toNumber(product.stock),
-            imageUrl: product.imageUrl ?? product.image_url ?? fallbackImage,
+            imageUrl: normalizeImageUrl(product.imageUrl ?? product.image_url ?? fallbackImage),
           })),
-        ),
-      )
-      .catch(() => {
-        setProducts([
-          {
-            id: '1',
-            name: 'Aero Glide X1',
-            description: 'Patim elétrico urbano com aceleração suave.',
-            price: 3499.9,
-            promoPrice: 2999.9,
-            stock: 8,
-            imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80',
-          },
-          {
-            id: '2',
-            name: 'Volt Rush S2',
-            description: 'Modelo esportivo para trechos longos.',
-            price: 4299.9,
-            stock: 5,
-            imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-          },
-        ]);
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to load products from backend:', error);
+        setProducts([]);
       });
   }, []);
 

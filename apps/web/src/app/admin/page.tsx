@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import { buildApiUrl } from '@/config/environment';
+import { buildApiUrl, normalizeImageUrl } from '@/config/environment';
 
 type Product = {
   id: string;
@@ -46,6 +46,7 @@ export default function AdminPage() {
           price,
           promoPrice: promoPrice > 0 && promoPrice < price ? promoPrice : undefined,
           stock: toNumber(product.stock),
+          imageUrl: normalizeImageUrl(product.imageUrl ?? product.image_url),
         };
       }),
     );
@@ -118,6 +119,25 @@ export default function AdminPage() {
     resetForm();
   };
 
+  const deleteProduct = async (productId: string) => {
+    const confirmed = window.confirm('Deseja realmente excluir este produto?');
+    if (!confirmed) {
+      return;
+    }
+
+    const response = await fetch(buildApiUrl(`/store/products/${productId}`), {
+      method: 'DELETE',
+    });
+
+    if (response.ok) {
+      alert('Produto excluído com sucesso');
+      loadProducts();
+      if (editingId === productId) {
+        resetForm();
+      }
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-800 lg:px-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -175,7 +195,10 @@ export default function AdminPage() {
                     <div className="flex flex-col gap-2 text-right text-sm text-slate-600">
                       <p>R$ {formatCurrency(product.price)}</p>
                       {product.promoPrice ? <p className="text-cyan-700">Promo R$ {formatCurrency(product.promoPrice)}</p> : null}
-                      <button onClick={() => editProduct(product)} className="rounded-full bg-cyan-600 px-3 py-2 text-white">Editar</button>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => editProduct(product)} className="rounded-full bg-cyan-600 px-3 py-2 text-white">Editar</button>
+                        <button onClick={() => deleteProduct(product.id)} className="rounded-full border border-rose-300 bg-rose-50 px-3 py-2 font-semibold text-rose-700">Excluir</button>
+                      </div>
                     </div>
                   </div>
                 </div>

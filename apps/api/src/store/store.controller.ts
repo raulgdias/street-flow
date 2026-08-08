@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -21,6 +21,11 @@ export class StoreController {
   @Patch('products/:id')
   async updateProduct(@Param('id') id: string, @Body() payload: any) {
     return this.storeService.updateProduct(id, payload);
+  }
+
+  @Delete('products/:id')
+  async deleteProduct(@Param('id') id: string) {
+    return this.storeService.deleteProduct(id);
   }
 
   @Post('products/:id/image')
@@ -49,7 +54,8 @@ export class StoreController {
       throw new BadRequestException('Arquivo de imagem obrigatório');
     }
 
-    const imageUrl = `${process.env.API_BASE_URL ?? 'http://localhost:3000'}/uploads/${file.filename}`;
+    const publicBaseUrl = process.env.API_BASE_URL?.trim() || process.env.NEXT_PUBLIC_API_URL?.trim() || 'http://localhost:3000';
+    const imageUrl = `${publicBaseUrl.replace(/\/$/, '')}/uploads/${file.filename}`;
     return this.storeService.updateProduct(id, { imageUrl });
   }
 

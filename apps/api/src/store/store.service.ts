@@ -66,6 +66,11 @@ export class StoreService {
     return result.rows[0];
   }
 
+  async deleteProduct(id: string) {
+    const result = await this.pool.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
+    return result.rows[0] ?? null;
+  }
+
   async getUsers() {
     const result = await this.pool.query('SELECT id, name, email, role FROM users ORDER BY id ASC');
     return result.rows;
