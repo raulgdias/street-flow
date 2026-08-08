@@ -7,6 +7,11 @@ import { AppModule } from './app.module';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
+function getPrismaBinary() {
+  const isWindows = process.platform === 'win32';
+  return isWindows ? 'npx.cmd' : 'npx';
+}
+
 async function ensureDatabaseSchema() {
   const shouldSyncDb = process.env.NODE_ENV === 'production' || process.env.PRISMA_SYNC_DB === 'true';
 
@@ -15,11 +20,14 @@ async function ensureDatabaseSchema() {
   }
 
   const apiRoot = join(__dirname, '..', '..');
+  const prismaSchema = join(apiRoot, 'prisma', 'schema.prisma');
+  const prismaEnv = { ...process.env, DATABASE_URL: process.env.DATABASE_URL ?? '' };
+
   console.log('Synchronizing Prisma schema with the database...');
-  execSync('npx prisma db push --accept-data-loss --skip-generate', {
+  execSync(`${getPrismaBinary()} prisma db push --schema ${prismaSchema} --accept-data-loss --skip-generate`, {
     cwd: apiRoot,
     stdio: 'inherit',
-    env: process.env,
+    env: prismaEnv,
   });
 }
 
