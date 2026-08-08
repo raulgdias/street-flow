@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { buildApiUrl } from '@/config/environment';
 
 type Product = {
   id: string;
@@ -44,7 +45,7 @@ export default function ShopPage() {
       }
     }
 
-    fetch('http://localhost:3000/store/products')
+    fetch(buildApiUrl('/store/products'))
       .then((res) => res.json())
       .then((data) =>
         setProducts(

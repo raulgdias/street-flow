@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { buildApiUrl } from '@/config/environment';
 
 function LoginContent() {
   const router = useRouter();
@@ -14,7 +15,7 @@ function LoginContent() {
     const email = (form.elements.namedItem('email') as HTMLInputElement).value;
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
 
-    const response = await fetch('http://localhost:3000/store/auth/login', {
+    const response = await fetch(buildApiUrl('/store/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

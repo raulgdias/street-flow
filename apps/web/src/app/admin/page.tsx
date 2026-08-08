@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+import { buildApiUrl } from '@/config/environment';
+
 type Product = {
   id: string;
   name: string;
@@ -33,7 +35,7 @@ export default function AdminPage() {
   const [imageInputKey, setImageInputKey] = useState(0);
 
   const loadProducts = async () => {
-    const response = await fetch('http://localhost:3000/store/products');
+    const response = await fetch(buildApiUrl('/store/products'));
     const data = await response.json();
     setProducts(
       data.map((product: any) => {
@@ -75,7 +77,7 @@ export default function AdminPage() {
       imageUrl: imageUrl || null,
     };
 
-    const url = editingId ? `http://localhost:3000/store/products/${editingId}` : 'http://localhost:3000/store/products';
+    const url = editingId ? buildApiUrl(`/store/products/${editingId}`) : buildApiUrl('/store/products');
     const method = editingId ? 'PATCH' : 'POST';
 
     const response = await fetch(url, {
@@ -89,7 +91,7 @@ export default function AdminPage() {
       if (imageFile && result?.id) {
         const uploadData = new FormData();
         uploadData.append('image', imageFile);
-        await fetch(`http://localhost:3000/store/products/${result.id}/image`, {
+        await fetch(buildApiUrl(`/store/products/${result.id}/image`), {
           method: 'POST',
           body: uploadData,
         });
