@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateCustomerCommand } from './create-customer.command';
 import { CustomerFactory } from '../../domain/customer.factory';
-import { CUSTOMER_REPOSITORY, type CustomerRepository } from '../../domain/customer.repository.interface';
+import {
+  CUSTOMER_REPOSITORY,
+  type CustomerRepository,
+} from '../../domain/customer.repository.interface';
 import type { CustomerDto } from '@street-flow/contracts';
 import { CircuitBreakerService } from '../../../shared/circuit-breaker/circuit-breaker.service';
 
@@ -9,7 +12,8 @@ import { CircuitBreakerService } from '../../../shared/circuit-breaker/circuit-b
 export class CreateCustomerHandler {
   constructor(
     private readonly customerFactory: CustomerFactory,
-    @Inject(CUSTOMER_REPOSITORY) private readonly customerRepository: CustomerRepository,
+    @Inject(CUSTOMER_REPOSITORY)
+    private readonly customerRepository: CustomerRepository,
     private readonly circuitBreaker: CircuitBreakerService,
   ) {}
 

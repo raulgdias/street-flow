@@ -6,12 +6,12 @@ import { CustomerRepository } from '../domain/customer.repository.interface';
 export class InMemoryCustomerRepository implements CustomerRepository {
   private readonly customers: Customer[] = [];
 
-  async save(customer: Customer): Promise<Customer> {
+  save(customer: Customer): Promise<Customer> {
     this.customers.push(customer);
-    return customer;
+    return Promise.resolve(customer);
   }
 
-  async findAll(): Promise<Customer[]> {
-    return this.customers;
+  findAll(): Promise<Customer[]> {
+    return Promise.resolve(this.customers);
   }
 }

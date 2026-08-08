@@ -1,103 +1,186 @@
 import { Injectable } from '@nestjs/common';
-import { Pool } from 'pg';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AuthService } from '../auth/auth.service';
+import { ProductEntity } from './entities/product.entity';
+import { UserEntity, UserRole } from './entities/user.entity';
+
+export interface CreateProductInput {
+  name: string;
+  description: string;
+  price: number | string;
+  promoPrice?: number | string | null;
+  stock?: number | string;
+  imageUrl?: string | null;
+}
+
+export type UpdateProductInput = Partial<CreateProductInput>;
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  passwordHash: string;
+  role?: UserRole;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
 
 @Injectable()
 export class StoreService {
-  private readonly pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
+  constructor(
+    @InjectRepository(ProductEntity)
+    private readonly products: Repository<ProductEntity>,
+    @InjectRepository(UserEntity)
+    private readonly users: Repository<UserEntity>,
+    private readonly authService: AuthService,
+  ) {}
 
-  private normalizePromoPrice(price: number, rawPromoPrice: any) {
-    const promoPrice = rawPromoPrice != null ? Number(rawPromoPrice) : undefined;
-    if (promoPrice == null || !Number.isFinite(promoPrice) || promoPrice <= 0 || promoPrice >= price) {
+  private normalizePromoPrice(price: number, rawPromoPrice: unknown) {
+    const promoPrice =
+      rawPromoPrice != null ? Number(rawPromoPrice) : undefined;
+    if (
+      promoPrice == null ||
+      !Number.isFinite(promoPrice) ||
+      promoPrice <= 0 ||
+      promoPrice >= price
+    ) {
       return undefined;
     }
     return promoPrice;
   }
 
-  private mapProduct(row: any) {
-    const price = Number(row.price);
+  private mapProduct(product: ProductEntity) {
+    const price = Number(product.price);
     return {
-      id: String(row.id),
-      name: row.name,
-      description: row.description,
+      id: product.id,
+      name: product.name,
+      description: product.description,
       price,
-      promoPrice: this.normalizePromoPrice(price, row.promo_price),
-      stock: Number(row.stock),
-      imageUrl: row.image_url ?? row.imageUrl ?? null,
-      isActive: row.is_active,
-      createdAt: row.created_at,
+      promoPrice: this.normalizePromoPrice(price, product.promoPrice),
+      stock: product.stock,
+      imageUrl: product.imageUrl,
+      isActive: product.isActive,
+      createdAt: product.createdAt,
     };
   }
 
   async getProducts() {
-    const result = await this.pool.query('SELECT * FROM products ORDER BY id ASC');
-    return result.rows.map((row) => this.mapProduct(row));
+    const products = await this.products.find({ order: { createdAt: 'ASC' } });
+    return products.map((product) => this.mapProduct(product));
   }
 
   async getProductById(id: string) {
-    const result = await this.pool.query('SELECT * FROM products WHERE id = $1', [id]);
-    return result.rows[0] ? this.mapProduct(result.rows[0]) : null;
+    const product = await this.products.findOneBy({ id });
+    return product ? this.mapProduct(product) : null;
   }
 
-  async createProduct(payload: any) {
+  async createProduct(payload: CreateProductInput) {
     const { name, description, price, promoPrice, stock, imageUrl } = payload;
     const numericPrice = Number(price);
-    const normalizedPromoPrice = this.normalizePromoPrice(numericPrice, promoPrice);
-    const result = await this.pool.query(
-      `INSERT INTO products (name, description, price, promo_price, stock, image_url, is_active) VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING *`,
-      [name, description, numericPrice, normalizedPromoPrice ?? null, stock ?? 10, imageUrl ?? null],
+    const normalizedPromoPrice = this.normalizePromoPrice(
+      numericPrice,
+      promoPrice,
     );
-    return result.rows[0];
+    const product = this.products.create({
+      name,
+      description,
+      price: numericPrice,
+      promoPrice: normalizedPromoPrice ?? null,
+      stock: Number(stock ?? 10),
+      imageUrl: imageUrl ?? null,
+      isActive: true,
+    });
+    return this.mapProduct(await this.products.save(product));
   }
 
-  async updateProduct(id: string, payload: any) {
-    const { name, description, price, promoPrice, stock, imageUrl } = payload;
-    const numericPrice = Number(price);
-    const normalizedPromoPrice = this.normalizePromoPrice(numericPrice, promoPrice);
-    const result = await this.pool.query(
-      `UPDATE products SET name = COALESCE($1, name), description = COALESCE($2, description), price = COALESCE($3, price), promo_price = $4, stock = COALESCE($5, stock), image_url = COALESCE($6, image_url) WHERE id = $7 RETURNING *`,
-      [name ?? null, description ?? null, Number(price) ?? null, normalizedPromoPrice ?? null, stock ?? null, imageUrl ?? null, id],
-    );
-    return result.rows[0];
+  async updateProduct(id: string, payload: UpdateProductInput) {
+    const product = await this.products.findOneBy({ id });
+    if (!product) return null;
+
+    const nextPrice =
+      payload.price != null ? Number(payload.price) : Number(product.price);
+    const promoPrice = Object.hasOwn(payload, 'promoPrice')
+      ? (this.normalizePromoPrice(nextPrice, payload.promoPrice) ?? null)
+      : product.promoPrice;
+
+    this.products.merge(product, {
+      ...(payload.name != null && { name: payload.name }),
+      ...(payload.description != null && { description: payload.description }),
+      ...(payload.price != null && { price: nextPrice }),
+      ...(payload.stock != null && { stock: Number(payload.stock) }),
+      ...(payload.imageUrl != null && { imageUrl: payload.imageUrl }),
+      promoPrice,
+    });
+    return this.mapProduct(await this.products.save(product));
   }
 
   async deleteProduct(id: string) {
-    const result = await this.pool.query('DELETE FROM products WHERE id = $1 RETURNING *', [id]);
-    return result.rows[0] ?? null;
+    const product = await this.products.findOneBy({ id });
+    if (!product) return null;
+    await this.products.remove(product);
+    return this.mapProduct(product);
   }
 
   async getUsers() {
-    const result = await this.pool.query('SELECT id, name, email, role FROM users ORDER BY id ASC');
-    return result.rows;
+    return this.users.find({
+      select: { id: true, name: true, email: true, role: true },
+      order: { createdAt: 'ASC' },
+    });
   }
 
-  async createUser(payload: any) {
+  async createUser(payload: CreateUserInput) {
     const { name, email, passwordHash, role } = payload;
-    const result = await this.pool.query(
-      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role`,
-      [name, email, passwordHash, role],
+    const user = await this.users.save(
+      this.users.create({
+        name,
+        email,
+        passwordHash,
+        role: role ?? UserRole.USER,
+      }),
     );
-    return result.rows[0];
+    return { id: user.id, name: user.name, email: user.email, role: user.role };
   }
 
-  async login(payload: any) {
+  async login(payload: LoginInput) {
     const { email, password } = payload;
 
     if (email === 'admin@streetflow.com' && password === 'admin123') {
-      return { id: 1, name: 'Admin Street Flow', email, role: 'ADMIN' };
+      return {
+        id: 'demo-admin',
+        name: 'Admin Street Flow',
+        email,
+        role: UserRole.ADMIN,
+      };
     }
 
     if (email === 'user@streetflow.com' && password === 'user123') {
-      return { id: 2, name: 'User Street Flow', email, role: 'USER' };
+      return {
+        id: 'demo-user',
+        name: 'User Street Flow',
+        email,
+        role: UserRole.USER,
+      };
     }
 
-    const result = await this.pool.query('SELECT id, name, email, role, password_hash FROM users WHERE email = $1', [email]);
-    if (result.rowCount === 0) {
+    const user = await this.users.findOne({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        passwordHash: true,
+      },
+    });
+    if (
+      !user ||
+      !(await this.authService.comparePassword(password, user.passwordHash))
+    ) {
       return null;
     }
-
-    const user = result.rows[0];
     return { id: user.id, name: user.name, email: user.email, role: user.role };
   }
 }

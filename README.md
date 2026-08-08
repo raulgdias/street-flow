@@ -4,7 +4,7 @@ Monorepo de MVP de ecommerce com frontend em Next.js e backend em NestJS.
 
 ## Estrutura
 
-- `apps/api` - Backend NestJS que oferece endpoints de produtos, autenticação e upload de imagens.
+- `apps/api` - Backend NestJS que oferece endpoints de produtos e autenticação.
 - `apps/web` - Frontend Next.js com App Router, pages de loja, carrinho, login e admin.
 - `packages/contracts` - Contratos compartilhados do monorepo.
 
@@ -13,6 +13,7 @@ Monorepo de MVP de ecommerce com frontend em Next.js e backend em NestJS.
 - Next.js
 - React
 - NestJS
+- TypeORM
 - PostgreSQL
 - TurboRepo
 - Tailwind CSS
@@ -43,6 +44,16 @@ cd apps/web && npm run dev
 ```bash
 npm run build
 ```
+
+## Banco de dados
+
+A API usa `DATABASE_URL` para conectar ao PostgreSQL. Em produção
+(`NODE_ENV=production`), o TypeORM sincroniza automaticamente as entidades e
+cria as tabelas de usuários, produtos, carrinhos e pedidos na inicialização.
+
+Em ambientes de preview, essa criação automática também pode ser habilitada
+com `TYPEORM_SYNCHRONIZE=true`. Para provedores que exigem SSL, use
+`DATABASE_SSL=true`.
 
 ## Endpoints principais
 

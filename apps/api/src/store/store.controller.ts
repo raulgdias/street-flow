@@ -1,8 +1,24 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
-import { StoreService } from './store.service';
+import {
+  type CreateProductInput,
+  type LoginInput,
+  StoreService,
+  type UpdateProductInput,
+} from './store.service';
 
 @Controller('store')
 export class StoreController {
@@ -14,12 +30,15 @@ export class StoreController {
   }
 
   @Post('products')
-  async createProduct(@Body() payload: any) {
+  async createProduct(@Body() payload: CreateProductInput) {
     return this.storeService.createProduct(payload);
   }
 
   @Patch('products/:id')
-  async updateProduct(@Param('id') id: string, @Body() payload: any) {
+  async updateProduct(
+    @Param('id') id: string,
+    @Body() payload: UpdateProductInput,
+  ) {
     return this.storeService.updateProduct(id, payload);
   }
 
@@ -49,12 +68,18 @@ export class StoreController {
       },
     }),
   )
-  async uploadProductImage(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+  async uploadProductImage(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     if (!file) {
       throw new BadRequestException('Arquivo de imagem obrigatório');
     }
 
-    const publicBaseUrl = process.env.API_BASE_URL?.trim() || process.env.NEXT_PUBLIC_API_URL?.trim() || 'http://localhost:3000';
+    const publicBaseUrl =
+      process.env.API_BASE_URL?.trim() ||
+      process.env.NEXT_PUBLIC_API_URL?.trim() ||
+      'http://localhost:3000';
     const imageUrl = `${publicBaseUrl.replace(/\/$/, '')}/uploads/${file.filename}`;
     return this.storeService.updateProduct(id, { imageUrl });
   }
@@ -65,7 +90,7 @@ export class StoreController {
   }
 
   @Post('auth/login')
-  async login(@Body() payload: any) {
+  async login(@Body() payload: LoginInput) {
     return this.storeService.login(payload);
   }
 }
