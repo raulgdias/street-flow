@@ -4,11 +4,7 @@ import { Pool } from 'pg';
 @Injectable()
 export class StoreService {
   private readonly pool = new Pool({
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-    password: 'Pa@4816905',
-    database: 'Local',
+    connectionString: process.env.DATABASE_URL,
   });
 
   private normalizePromoPrice(price: number, rawPromoPrice: any) {

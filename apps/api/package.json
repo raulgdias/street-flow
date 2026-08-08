@@ -24,7 +24,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.6",
-    "@prisma/client": "^6.0.0",
+    "@prisma/client": "^6.19.3",
     "@street-flow/contracts": "file:../../packages/contracts",
     "@types/bcrypt": "^6.0.0",
     "@types/pg": "^8.20.4",
