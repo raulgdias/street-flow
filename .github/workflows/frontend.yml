@@ -26,7 +26,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --production
 
       - name: Build with Turborepo
         run: npx turbo run build --filter=web
@@ -38,7 +38,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: "upload"
           app_location: "/apps/web"
-          output_location: ".next"
+          output_location: "out"
           skip_app_build: true
 
   close_pull_request_job:
