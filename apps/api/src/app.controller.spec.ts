@@ -21,5 +21,12 @@ describe('AppController', () => {
         service: 'api',
       });
     });
+
+    it('should expose the same status to deployment probes', () => {
+      expect(appController.getHealth()).toMatchObject({
+        status: 'ok',
+        service: 'api',
+      });
+    });
   });
 });

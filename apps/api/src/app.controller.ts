@@ -14,4 +14,11 @@ export class AppController {
   getHello(): HealthCheckResponse {
     return this.appService.getHello();
   }
+
+  @Get('health')
+  @ApiOperation({ summary: 'Health check for deployment probes' })
+  @ApiResponse({ status: 200, description: 'Service is healthy' })
+  getHealth(): HealthCheckResponse {
+    return this.appService.getHello();
+  }
 }

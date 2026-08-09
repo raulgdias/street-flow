@@ -68,7 +68,7 @@ jobs:
 
           for attempt in $(seq 1 18); do
             echo "Health check $attempt/18"
-            if curl --fail --silent --show-error --max-time 10 "$APP_URL/"; then
+            if curl --fail --silent --show-error --max-time 10 "$APP_URL/health"; then
               echo
               echo "API iniciada e respondendo com sucesso."
               exit 0
@@ -77,5 +77,5 @@ jobs:
           done
 
           echo "A implantação foi aceita pelo Kudu, mas a API não ficou disponível. Última resposta:"
-          curl --silent --show-error --include --max-time 20 "$APP_URL/" || true
+          curl --silent --show-error --include --max-time 20 "$APP_URL/health" || true
           exit 1
