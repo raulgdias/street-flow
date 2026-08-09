@@ -19,7 +19,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "22"
 
       - name: Instalar dependências
         run: npm ci
@@ -27,8 +27,17 @@ jobs:
       - name: Build do Backend com Turbo
         run: npx turbo run build --filter=api
 
+      - name: Preparar pacote de produção da API
+        run: |
+          mkdir -p .azure-api
+          cp -R apps/api/dist .azure-api/dist
+          cp apps/api/package.json .azure-api/package.json
+          npm pkg delete devDependencies --prefix .azure-api
+          npm install --omit=dev --package-lock=false --prefix .azure-api
+
       - name: Deploy no Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'street-flow-api' # Certifique-se de que é o nome exato do seu App Service
+          app-name: "street-flow-api" # Certifique-se de que é o nome exato do seu App Service
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ".azure-api"

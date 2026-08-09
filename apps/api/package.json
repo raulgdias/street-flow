@@ -4,6 +4,9 @@
   "description": "",
   "author": "",
   "private": true,
+  "engines": {
+    "node": ">=22 <23"
+  },
   "license": "UNLICENSED",
   "scripts": {
     "start": "node dist/main.js",
@@ -25,10 +28,8 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/typeorm": "^11.0.3",
-    "@street-flow/contracts": "file:../../packages/contracts",
-    "@types/bcrypt": "^6.0.0",
     "@types/pg": "^8.20.4",
-    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "pg": "^8.22.0",
@@ -42,6 +43,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@street-flow/contracts": "file:../../packages/contracts",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",

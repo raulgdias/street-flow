@@ -6,8 +6,14 @@ import { OrderEntity } from '../../store/entities/order.entity';
 import { ProductEntity } from '../../store/entities/product.entity';
 import { UserEntity } from '../../store/entities/user.entity';
 
-function isEnabled(value: string | undefined): boolean {
+export function isEnabled(value: string | undefined): boolean {
   return value?.toLowerCase() === 'true';
+}
+
+export function shouldSynchronizeSchema(): boolean {
+  return process.env.TYPEORM_SYNCHRONIZE == null
+    ? true
+    : isEnabled(process.env.TYPEORM_SYNCHRONIZE);
 }
 
 export function postgresConfig(): TypeOrmModuleOptions {
@@ -16,6 +22,24 @@ export function postgresConfig(): TypeOrmModuleOptions {
 
   if (isProduction && !databaseUrl) {
     throw new Error('DATABASE_URL é obrigatória em produção');
+  }
+
+  if (isProduction && databaseUrl) {
+    const parsedUrl = new URL(databaseUrl);
+    if (
+      parsedUrl.protocol !== 'postgres:' &&
+      parsedUrl.protocol !== 'postgresql:'
+    ) {
+      throw new Error(
+        'DATABASE_URL deve começar com postgres:// ou postgresql://',
+      );
+    }
+
+    const databaseName =
+      parsedUrl.pathname.replace(/^\//, '') || '(não informado)';
+    console.info(
+      `[database] configuração de produção: host=${parsedUrl.hostname} port=${parsedUrl.port || '5432'} database=${databaseName} ssl=${isEnabled(process.env.DATABASE_SSL)}`,
+    );
   }
 
   const connection = isProduction
@@ -40,17 +64,15 @@ export function postgresConfig(): TypeOrmModuleOptions {
       OrderEntity,
       OrderItemEntity,
     ],
-    // This MVP bootstraps empty local and production databases automatically.
-    synchronize:
-      process.env.TYPEORM_SYNCHRONIZE == null
-        ? true
-        : isEnabled(process.env.TYPEORM_SYNCHRONIZE),
+    // Synchronization is performed explicitly during bootstrap for clear logs.
+    synchronize: false,
     ssl:
       isProduction && isEnabled(process.env.DATABASE_SSL)
         ? { rejectUnauthorized: false }
         : undefined,
-    retryAttempts: 10,
-    retryDelay: 3_000,
+    retryAttempts: 3,
+    retryDelay: 2_000,
+    connectTimeoutMS: 10_000,
     logging: isEnabled(process.env.TYPEORM_LOGGING)
       ? ['error', 'schema', 'warn']
       : ['error'],

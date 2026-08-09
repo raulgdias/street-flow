@@ -1,12 +1,14 @@
-import { postgresConfig } from './postgres.config';
+import { postgresConfig, shouldSynchronizeSchema } from './postgres.config';
 
 describe('postgresConfig', () => {
   const originalNodeEnv = process.env.NODE_ENV;
   const originalDatabaseUrl = process.env.DATABASE_URL;
+  const originalSynchronize = process.env.TYPEORM_SYNCHRONIZE;
 
   afterEach(() => {
     process.env.NODE_ENV = originalNodeEnv;
     process.env.DATABASE_URL = originalDatabaseUrl;
+    process.env.TYPEORM_SYNCHRONIZE = originalSynchronize;
   });
 
   it('uses the local PostgreSQL server outside production', () => {
@@ -21,6 +23,7 @@ describe('postgresConfig', () => {
       database: 'streetflow',
     });
     expect(postgresConfig()).not.toHaveProperty('url');
+    expect(postgresConfig()).toHaveProperty('synchronize', false);
   });
 
   it('uses DATABASE_URL in production', () => {
@@ -38,5 +41,13 @@ describe('postgresConfig', () => {
     delete process.env.DATABASE_URL;
 
     expect(postgresConfig).toThrow('DATABASE_URL é obrigatória em produção');
+  });
+
+  it('synchronizes by default and supports an explicit opt-out', () => {
+    delete process.env.TYPEORM_SYNCHRONIZE;
+    expect(shouldSynchronizeSchema()).toBe(true);
+
+    process.env.TYPEORM_SYNCHRONIZE = 'false';
+    expect(shouldSynchronizeSchema()).toBe(false);
   });
 });
