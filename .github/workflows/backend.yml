@@ -35,9 +35,47 @@ jobs:
           npm pkg delete devDependencies scripts.build --prefix .azure-api
           npm install --omit=dev --package-lock=false --prefix .azure-api
 
+      - name: Validar pacote que será publicado
+        run: |
+          test -f .azure-api/package.json
+          test -f .azure-api/dist/main.js
+          test -d .azure-api/node_modules/typeorm
+          test -d .azure-api/node_modules/@nestjs/core
+          node --check .azure-api/dist/main.js
+          npm pkg get scripts.start --prefix .azure-api
+
       - name: Deploy no Azure Web App
+        id: deploy
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "street-flow-api" # Certifique-se de que é o nome exato do seu App Service
+          app-name: "street-flow-api"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ".azure-api"
+          clean: true
+          restart: true
+
+      - name: Confirmar que a API iniciou no Azure
+        timeout-minutes: 5
+        env:
+          APP_URL: ${{ steps.deploy.outputs.webapp-url }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "O publish profile não informou a URL do App Service. Gere um novo publish profile no recurso street-flow-api."
+            exit 1
+          fi
+
+          echo "App Service publicado em: $APP_URL"
+
+          for attempt in $(seq 1 18); do
+            echo "Health check $attempt/18"
+            if curl --fail --silent --show-error --max-time 10 "$APP_URL/"; then
+              echo
+              echo "API iniciada e respondendo com sucesso."
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "A implantação foi aceita pelo Kudu, mas a API não ficou disponível. Última resposta:"
+          curl --silent --show-error --include --max-time 20 "$APP_URL/" || true
+          exit 1
