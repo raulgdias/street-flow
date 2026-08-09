@@ -1,4 +1,10 @@
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { CartItemEntity } from '../../store/entities/cart-item.entity';
+import { CartEntity } from '../../store/entities/cart.entity';
+import { OrderItemEntity } from '../../store/entities/order-item.entity';
+import { OrderEntity } from '../../store/entities/order.entity';
+import { ProductEntity } from '../../store/entities/product.entity';
+import { UserEntity } from '../../store/entities/user.entity';
 
 function isEnabled(value: string | undefined): boolean {
   return value?.toLowerCase() === 'true';
@@ -6,8 +12,14 @@ function isEnabled(value: string | undefined): boolean {
 
 export function postgresConfig(): TypeOrmModuleOptions {
   const isProduction = process.env.NODE_ENV === 'production';
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+
+  if (isProduction && !databaseUrl) {
+    throw new Error('DATABASE_URL é obrigatória em produção');
+  }
+
   const connection = isProduction
-    ? { url: process.env.DATABASE_URL }
+    ? { url: databaseUrl }
     : {
         host: 'localhost',
         port: 5432,
@@ -19,7 +31,15 @@ export function postgresConfig(): TypeOrmModuleOptions {
   return {
     type: 'postgres',
     ...connection,
-    autoLoadEntities: true,
+    // Explicit entities make schema synchronization reliable in bundled deployments.
+    entities: [
+      UserEntity,
+      ProductEntity,
+      CartEntity,
+      CartItemEntity,
+      OrderEntity,
+      OrderItemEntity,
+    ],
     // This MVP bootstraps empty local and production databases automatically.
     synchronize:
       process.env.TYPEORM_SYNCHRONIZE == null
@@ -31,6 +51,8 @@ export function postgresConfig(): TypeOrmModuleOptions {
         : undefined,
     retryAttempts: 10,
     retryDelay: 3_000,
-    logging: isEnabled(process.env.TYPEORM_LOGGING),
+    logging: isEnabled(process.env.TYPEORM_LOGGING)
+      ? ['error', 'schema', 'warn']
+      : ['error'],
   };
 }

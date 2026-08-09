@@ -32,4 +32,11 @@ describe('postgresConfig', () => {
     });
     expect(postgresConfig()).not.toHaveProperty('host');
   });
+
+  it('requires DATABASE_URL in production', () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.DATABASE_URL;
+
+    expect(postgresConfig).toThrow('DATABASE_URL é obrigatória em produção');
+  });
 });
