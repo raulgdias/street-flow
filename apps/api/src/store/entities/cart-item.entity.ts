@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
@@ -15,8 +16,8 @@ import { moneyTransformer } from './money.transformer';
 @Entity({ name: 'cart_items' })
 @Unique(['cart', 'product'])
 export class CartItemEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryColumn('uuid')
+  id: string = randomUUID();
 
   @ManyToOne(() => CartEntity, (cart) => cart.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'cart_id' })

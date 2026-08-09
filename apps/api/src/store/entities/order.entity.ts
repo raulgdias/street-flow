@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   Column,
   CreateDateColumn,
@@ -5,7 +6,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserEntity } from './user.entity';
@@ -20,8 +21,8 @@ export enum OrderStatus {
 
 @Entity({ name: 'orders' })
 export class OrderEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryColumn('uuid')
+  id: string = randomUUID();
 
   @ManyToOne(() => UserEntity, (user) => user.orders, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'user_id' })

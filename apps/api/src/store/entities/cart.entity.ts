@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import {
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserEntity } from './user.entity';
@@ -12,8 +13,8 @@ import { CartItemEntity } from './cart-item.entity';
 
 @Entity({ name: 'carts' })
 export class CartEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryColumn('uuid')
+  id: string = randomUUID();
 
   @ManyToOne(() => UserEntity, (user) => user.carts, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })

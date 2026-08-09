@@ -1,9 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import {
   Column,
   CreateDateColumn,
   Entity,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { CartItemEntity } from './cart-item.entity';
@@ -12,8 +13,8 @@ import { moneyTransformer } from './money.transformer';
 
 @Entity({ name: 'products' })
 export class ProductEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryColumn('uuid')
+  id: string = randomUUID();
 
   @Column({ length: 140 })
   name: string;
