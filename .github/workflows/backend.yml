@@ -32,7 +32,7 @@ jobs:
           mkdir -p .azure-api
           cp -R apps/api/dist .azure-api/dist
           cp apps/api/package.json .azure-api/package.json
-          npm pkg delete devDependencies --prefix .azure-api
+          npm pkg delete devDependencies scripts.build --prefix .azure-api
           npm install --omit=dev --package-lock=false --prefix .azure-api
 
       - name: Deploy no Azure Web App
