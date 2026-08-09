@@ -11,7 +11,6 @@ import {
   Save,
   Search,
   Trash2,
-  Upload,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -39,7 +38,6 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -87,7 +85,6 @@ export default function AdminPage() {
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setImageFile(null);
   };
 
   const flashMessage = (text: string) => {
@@ -116,15 +113,7 @@ export default function AdminPage() {
     });
 
     if (response.ok) {
-      const result = (await response.json()) as { id?: string };
-      if (imageFile && result.id) {
-        const uploadData = new FormData();
-        uploadData.append("image", imageFile);
-        await fetch(buildApiUrl(`/store/products/${result.id}/image`), {
-          method: "POST",
-          body: uploadData,
-        });
-      }
+      await response.json();
       flashMessage(editingId ? "Produto atualizado" : "Produto adicionado");
       resetForm();
       await loadProducts();
@@ -144,7 +133,6 @@ export default function AdminPage() {
       stock: String(product.stock),
       imageUrl: product.imageUrl,
     });
-    setImageFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -298,46 +286,21 @@ export default function AdminPage() {
                 URL da imagem
                 <input
                   type="url"
+                  required
                   value={form.imageUrl}
                   onChange={(event) =>
                     updateField("imageUrl", event.target.value)
                   }
                   className="field"
-                  placeholder="https://..."
+                  placeholder="https://exemplo.com/patins.jpg"
                 />
               </label>
 
-              <div className="rounded-2xl border border-dashed border-forest-950/20 bg-cream-50 p-4">
-                <label className="flex cursor-pointer items-center gap-3 text-sm font-bold">
-                  <span className="grid size-10 place-items-center rounded-full bg-white">
-                    <Upload size={17} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate">
-                      {imageFile?.name ?? "Ou envie um arquivo"}
-                    </span>
-                    <span className="text-xs font-medium text-forest-950/45">
-                      PNG ou JPG
-                    </span>
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) =>
-                      setImageFile(event.target.files?.[0] ?? null)
-                    }
-                  />
-                </label>
-              </div>
-
-              {(form.imageUrl || imageFile) && (
+              {form.imageUrl && (
                 <div className="flex items-center gap-3 rounded-2xl bg-cream-100 p-3">
                   <div
                     className="size-14 rounded-xl bg-cover bg-center"
-                    style={{
-                      backgroundImage: `url(${imageFile ? URL.createObjectURL(imageFile) : form.imageUrl})`,
-                    }}
+                    style={{ backgroundImage: `url(${form.imageUrl})` }}
                   />
                   <div>
                     <p className="text-sm font-bold">Prévia da imagem</p>

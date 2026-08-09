@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
@@ -11,7 +11,7 @@ export interface CreateProductInput {
   price: number | string;
   promoPrice?: number | string | null;
   stock?: number | string;
-  imageUrl?: string | null;
+  imageUrl: string;
 }
 
 export type UpdateProductInput = Partial<CreateProductInput>;
@@ -52,6 +52,31 @@ export class StoreService {
     return promoPrice;
   }
 
+  private validateImageUrl(
+    value: string | null | undefined,
+    required = false,
+  ): string | null {
+    const imageUrl = value?.trim();
+    if (!imageUrl) {
+      if (required) {
+        throw new BadRequestException('A URL da imagem é obrigatória');
+      }
+      return null;
+    }
+
+    try {
+      const parsedUrl = new URL(imageUrl);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        throw new Error('Unsupported protocol');
+      }
+      return parsedUrl.toString();
+    } catch {
+      throw new BadRequestException(
+        'Informe uma URL de imagem HTTP ou HTTPS válida',
+      );
+    }
+  }
+
   private mapProduct(product: ProductEntity) {
     const price = Number(product.price);
     return {
@@ -90,7 +115,7 @@ export class StoreService {
       price: numericPrice,
       promoPrice: normalizedPromoPrice ?? null,
       stock: Number(stock ?? 10),
-      imageUrl: imageUrl ?? null,
+      imageUrl: this.validateImageUrl(imageUrl, true),
       isActive: true,
     });
     return this.mapProduct(await this.products.save(product));
@@ -111,7 +136,9 @@ export class StoreService {
       ...(payload.description != null && { description: payload.description }),
       ...(payload.price != null && { price: nextPrice }),
       ...(payload.stock != null && { stock: Number(payload.stock) }),
-      ...(payload.imageUrl != null && { imageUrl: payload.imageUrl }),
+      ...(Object.hasOwn(payload, 'imageUrl') && {
+        imageUrl: this.validateImageUrl(payload.imageUrl),
+      }),
       promoPrice,
     });
     return this.mapProduct(await this.products.save(product));

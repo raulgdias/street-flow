@@ -6,13 +6,7 @@ import {
   Param,
   Patch,
   Post,
-  UploadedFile,
-  UseInterceptors,
-  BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
 import {
   type CreateProductInput,
   type LoginInput,
@@ -45,43 +39,6 @@ export class StoreController {
   @Delete('products/:id')
   async deleteProduct(@Param('id') id: string) {
     return this.storeService.deleteProduct(id);
-  }
-
-  @Post('products/:id/image')
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: join(__dirname, '..', 'uploads'),
-        filename: (_req, file, callback) => {
-          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-          const fileExt = extname(file.originalname);
-          callback(null, `${uniqueSuffix}${fileExt}`);
-        },
-      }),
-      fileFilter: (_req, file, callback) => {
-        const allowed = /jpeg|jpg|png|gif/;
-        if (allowed.test(file.mimetype)) {
-          callback(null, true);
-        } else {
-          callback(new Error('Formato de imagem inválido'), false);
-        }
-      },
-    }),
-  )
-  async uploadProductImage(
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    if (!file) {
-      throw new BadRequestException('Arquivo de imagem obrigatório');
-    }
-
-    const publicBaseUrl =
-      process.env.API_BASE_URL?.trim() ||
-      process.env.NEXT_PUBLIC_API_URL?.trim() ||
-      'http://localhost:3000';
-    const imageUrl = `${publicBaseUrl.replace(/\/$/, '')}/uploads/${file.filename}`;
-    return this.storeService.updateProduct(id, { imageUrl });
   }
 
   @Get('users')
