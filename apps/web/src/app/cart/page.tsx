@@ -1,128 +1,238 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-
-type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  promoPrice?: number;
-  quantity: number;
-};
-
-const toNumber = (value: number | string | null | undefined) => {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const formatCurrency = (value: number | string | null | undefined) => toNumber(value).toFixed(2);
+import Link from "next/link";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Minus,
+  Plus,
+  ShieldCheck,
+  ShoppingBag,
+  Trash2,
+  Truck,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+import {
+  fallbackImage,
+  formatCurrency,
+  readCart,
+  type CartItem,
+  writeCart,
+} from "@/lib/store";
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem('streetflow-cart');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as CartItem[];
-        setCart(
-          parsed.map((item) => {
-            const price = toNumber(item.price);
-            const promoPrice = toNumber(item.promoPrice);
-            return {
-              ...item,
-              price,
-              promoPrice: promoPrice > 0 && promoPrice < price ? promoPrice : undefined,
-              quantity: Number(item.quantity) || 0,
-            };
-          }),
-        );
-      } catch {
-        localStorage.removeItem('streetflow-cart');
-      }
-    }
+    const timer = window.setTimeout(() => setCart(readCart()), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
-  const total = useMemo(() => cart.reduce((sum, item) => sum + toNumber(item.promoPrice ?? item.price) * item.quantity, 0), [cart]);
+  const subtotal = useMemo(
+    () =>
+      cart.reduce(
+        (sum, item) => sum + (item.promoPrice ?? item.price) * item.quantity,
+        0,
+      ),
+    [cart],
+  );
+
+  const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
+
+  const commitCart = (nextCart: CartItem[]) => {
+    setCart(nextCart);
+    writeCart(nextCart);
+  };
 
   const updateQuantity = (id: string, delta: number) => {
-    setCart((current) =>
-      current
-        .map((item) => (item.id === id ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item))
+    commitCart(
+      cart
+        .map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                quantity: Math.max(
+                  0,
+                  Math.min(item.quantity + delta, Math.max(item.stock, 1)),
+                ),
+              }
+            : item,
+        )
         .filter((item) => item.quantity > 0),
     );
   };
 
-  const removeItem = (id: string) => {
-    setCart((current) => current.filter((item) => item.id !== id));
-  };
+  const removeItem = (id: string) =>
+    commitCart(cart.filter((item) => item.id !== id));
 
   const checkout = () => {
-    const role = localStorage.getItem('streetflow-role');
+    const role = localStorage.getItem("streetflow-role");
     if (!role) {
-      router.push('/login?redirect=/cart');
+      router.push("/login?redirect=/cart");
       return;
     }
 
-    alert('Pedido confirmado com sucesso. O fluxo de checkout está pronto para expansão futura.');
-    localStorage.removeItem('streetflow-cart');
-    setCart([]);
+    window.alert(
+      "Pedido confirmado! Em breve você receberá os próximos passos por e-mail.",
+    );
+    commitCart([]);
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-800 lg:px-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <div className="flex flex-col gap-3 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <>
+      <SiteHeader />
+      <main className="container-shell py-12 md:py-20">
+        <Link
+          href="/shop"
+          className="inline-flex items-center gap-2 text-sm font-bold text-forest-950/60 transition hover:text-forest-950"
+        >
+          <ArrowLeft size={17} /> Continuar comprando
+        </Link>
+
+        <div className="mt-8 flex flex-col gap-3 border-b border-forest-950/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-cyan-600">Carrinho</p>
-            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Seu pedido</h1>
+            <p className="eyebrow text-coral-500">Sua seleção</p>
+            <h1 className="font-display mt-3 text-5xl font-bold tracking-[-0.07em] md:text-6xl">
+              Minha sacola.
+            </h1>
           </div>
-          <Link href="/shop" className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Voltar ao catálogo</Link>
+          <p className="text-sm font-bold text-forest-950/50">
+            {itemCount} {itemCount === 1 ? "item" : "itens"}
+          </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.7fr]">
-          <section className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-            {cart.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-600">
-                Seu carrinho está vazio. Adicione produtos para continuar.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-slate-900">{item.name}</p>
-                      <p className="text-sm text-slate-600">R$ {formatCurrency(item.promoPrice ?? item.price)} cada</p>
+        {cart.length === 0 ? (
+          <section className="paper-card mt-10 grid min-h-[400px] place-items-center px-6 py-16 text-center">
+            <div>
+              <span className="mx-auto grid size-16 place-items-center rounded-full bg-lime-300">
+                <ShoppingBag size={26} />
+              </span>
+              <h2 className="font-display mt-6 text-3xl font-bold tracking-[-0.05em]">
+                Sua sacola está leve.
+              </h2>
+              <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-forest-950/55">
+                Escolha um modelo e comece a desenhar sua próxima rota pela
+                cidade.
+              </p>
+              <Link href="/shop" className="button-primary mt-7">
+                Explorar patins
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-start">
+            <section className="grid gap-4" aria-label="Produtos na sacola">
+              {cart.map((item) => (
+                <article
+                  key={item.id}
+                  className="grid gap-5 rounded-[1.5rem] border border-forest-950/10 bg-white p-4 sm:grid-cols-[150px_1fr] sm:p-5"
+                >
+                  <div
+                    className="aspect-square rounded-[1.1rem] bg-cream-100 bg-cover bg-center"
+                    style={{
+                      backgroundImage: `url(${item.imageUrl || fallbackImage})`,
+                    }}
+                    role="img"
+                    aria-label={item.name}
+                  />
+                  <div className="flex min-w-0 flex-col justify-between gap-5 py-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="font-display text-xl font-bold tracking-[-0.04em]">
+                          {item.name}
+                        </h2>
+                        <p className="mt-1 text-xs font-bold text-forest-950/45">
+                          Pronto para envio
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="icon-button size-9 shrink-0 text-coral-600"
+                        aria-label={`Remover ${item.name}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => updateQuantity(item.id, -1)} className="rounded-full border border-slate-300 px-3 py-1 text-sm">-</button>
-                      <span className="min-w-8 text-center font-semibold">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, 1)} className="rounded-full border border-slate-300 px-3 py-1 text-sm">+</button>
-                      <button onClick={() => removeItem(item.id)} className="ml-2 text-sm font-semibold text-rose-600">Remover</button>
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div className="inline-flex items-center rounded-full border border-forest-950/12 p-1">
+                        <button
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="grid size-8 place-items-center rounded-full hover:bg-cream-100"
+                          aria-label="Diminuir quantidade"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="min-w-9 text-center text-sm font-bold">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="grid size-8 place-items-center rounded-full hover:bg-cream-100"
+                          aria-label="Aumentar quantidade"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-forest-950/45">
+                          {formatCurrency(item.promoPrice ?? item.price)} cada
+                        </p>
+                        <p className="font-display text-xl font-bold">
+                          {formatCurrency(
+                            (item.promoPrice ?? item.price) * item.quantity,
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
+                </article>
+              ))}
+            </section>
 
-          <aside className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">Resumo</h2>
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between text-sm text-slate-600">
-                <span>Total</span>
-                <span className="text-2xl font-semibold text-slate-900">R$ {formatCurrency(total)}</span>
+            <aside className="rounded-[1.75rem] bg-forest-950 p-6 text-white lg:sticky lg:top-28 md:p-8">
+              <p className="eyebrow text-lime-300">Resumo</p>
+              <div className="mt-7 grid gap-4 text-sm">
+                <div className="flex justify-between text-white/60">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-white/60">
+                  <span>Frete</span>
+                  <span className="font-bold text-lime-300">Grátis</span>
+                </div>
               </div>
-              <button onClick={checkout} className="mt-4 w-full rounded-full bg-cyan-600 px-4 py-3 font-semibold text-white">
+              <div className="mt-6 flex items-end justify-between border-t border-white/15 pt-6">
+                <span className="font-bold">Total</span>
+                <span className="font-display text-3xl font-bold tracking-[-0.04em]">
+                  {formatCurrency(subtotal)}
+                </span>
+              </div>
+              <button onClick={checkout} className="button-lime mt-7 w-full">
                 Finalizar compra
               </button>
-            </div>
-          </aside>
-        </div>
-      </div>
-    </main>
+              <div className="mt-7 grid gap-3 border-t border-white/15 pt-6 text-xs text-white/55">
+                <p className="flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-lime-300" /> Compra
+                  protegida e segura
+                </p>
+                <p className="flex items-center gap-2">
+                  <Truck size={16} className="text-lime-300" /> Frete grátis
+                  para todo o Brasil
+                </p>
+                <p className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-lime-300" /> 7 dias
+                  para troca ou devolução
+                </p>
+              </div>
+            </aside>
+          </div>
+        )}
+      </main>
+      <SiteFooter />
+    </>
   );
 }

@@ -1,19 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f6f4ed;
+  --foreground: #10271e;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-cream-50: #f6f4ed;
+  --color-cream-100: #ede9dd;
+  --color-forest-950: #10271e;
+  --color-forest-900: #17372a;
+  --color-forest-800: #234c3b;
+  --color-lime-300: #c9f85a;
+  --color-lime-400: #b7ea3f;
+  --color-coral-500: #f15b3f;
+  --color-coral-600: #d94b32;
+  --font-sans: var(--font-body);
+  --font-display: var(--font-heading);
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -21,5 +32,206 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  outline-offset: 4px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #f15b3f;
+}
+
+::selection {
+  background: #c9f85a;
+  color: #10271e;
+}
+
+@layer components {
+  .container-shell {
+    width: min(100% - 2rem, 1240px);
+    margin-inline: auto;
+  }
+
+  .font-display {
+    font-family: var(--font-heading), Arial, Helvetica, sans-serif;
+  }
+
+  .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .nav-link {
+    color: color-mix(in srgb, #10271e 70%, transparent);
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: color 160ms ease;
+  }
+
+  .nav-link:hover {
+    color: #10271e;
+  }
+
+  .mobile-nav-link {
+    border-radius: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    font-weight: 700;
+  }
+
+  .mobile-nav-link:hover {
+    background: #ede9dd;
+  }
+
+  .icon-button {
+    display: inline-grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, #10271e 14%, transparent);
+    border-radius: 999px;
+    color: #10271e;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .icon-button:hover {
+    border-color: color-mix(in srgb, #10271e 30%, transparent);
+    background: #ede9dd;
+  }
+
+  .button-primary {
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border-radius: 999px;
+    background: #10271e;
+    padding: 0.75rem 1.3rem;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 800;
+    transition:
+      transform 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .button-primary:hover {
+    transform: translateY(-2px);
+    background: #234c3b;
+  }
+
+  .button-lime {
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border-radius: 999px;
+    background: #c9f85a;
+    padding: 0.75rem 1.3rem;
+    color: #10271e;
+    font-size: 0.9rem;
+    font-weight: 800;
+    transition:
+      transform 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .button-lime:hover {
+    transform: translateY(-2px);
+    background: #b7ea3f;
+  }
+
+  .button-secondary {
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border: 1px solid color-mix(in srgb, #10271e 18%, transparent);
+    border-radius: 999px;
+    padding: 0.75rem 1.3rem;
+    color: #10271e;
+    font-size: 0.9rem;
+    font-weight: 800;
+    transition:
+      background-color 160ms ease,
+      transform 160ms ease;
+  }
+
+  .button-secondary:hover {
+    transform: translateY(-2px);
+    background: #ede9dd;
+  }
+
+  .field {
+    width: 100%;
+    min-height: 3.25rem;
+    border: 1px solid color-mix(in srgb, #10271e 18%, transparent);
+    border-radius: 0.9rem;
+    background: white;
+    padding: 0.8rem 1rem;
+    color: #10271e;
+    font-size: 0.9rem;
+    outline: none;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .field:focus {
+    border-color: #234c3b;
+    box-shadow: 0 0 0 3px color-mix(in srgb, #c9f85a 50%, transparent);
+  }
+
+  .field-label {
+    display: grid;
+    gap: 0.45rem;
+    color: color-mix(in srgb, #10271e 76%, transparent);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .paper-card {
+    border: 1px solid color-mix(in srgb, #10271e 12%, transparent);
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.74);
+    box-shadow: 0 24px 70px rgba(16, 39, 30, 0.06);
+  }
+}
+
+@media (min-width: 768px) {
+  @layer components {
+    .container-shell {
+      width: min(100% - 4rem, 1240px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
