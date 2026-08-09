@@ -47,12 +47,20 @@ npm run build
 
 ## Banco de dados
 
-A API usa `DATABASE_URL` para conectar ao PostgreSQL. Em produção
-(`NODE_ENV=production`), o TypeORM sincroniza automaticamente as entidades e
-cria as tabelas de usuários, produtos, carrinhos e pedidos na inicialização.
+Em desenvolvimento, a API conecta ao PostgreSQL local com estas configurações:
 
-Em ambientes de preview, essa criação automática também pode ser habilitada
-com `TYPEORM_SYNCHRONIZE=true`. Para provedores que exigem SSL, use
+- Host: `localhost`
+- Porta: `5432`
+- Banco: `streetflow`
+- Usuário: `postgres`
+- Senha: `Pa@4816905`
+
+Em produção (`NODE_ENV=production`), a conexão usa exclusivamente
+`DATABASE_URL`. O TypeORM sincroniza automaticamente as entidades e cria as
+tabelas de usuários, produtos, carrinhos e pedidos na inicialização.
+
+A sincronização pode ser desabilitada explicitamente com
+`TYPEORM_SYNCHRONIZE=false`. Para provedores de produção que exigem SSL, use
 `DATABASE_SSL=true`.
 
 ## Endpoints principais

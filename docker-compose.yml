@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 services:
   postgres:
     image: postgres:16-alpine
@@ -6,10 +6,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: streetflow
-      POSTGRES_USER: streetflow
-      POSTGRES_PASSWORD: streetflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Pa@4816905
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

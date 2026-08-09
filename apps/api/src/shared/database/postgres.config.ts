@@ -6,17 +6,29 @@ function isEnabled(value: string | undefined): boolean {
 
 export function postgresConfig(): TypeOrmModuleOptions {
   const isProduction = process.env.NODE_ENV === 'production';
+  const connection = isProduction
+    ? { url: process.env.DATABASE_URL }
+    : {
+        host: 'localhost',
+        port: 5432,
+        username: 'postgres',
+        password: 'Pa@4816905',
+        database: 'streetflow',
+      };
 
   return {
     type: 'postgres',
-    url: process.env.DATABASE_URL,
+    ...connection,
     autoLoadEntities: true,
-    // Production is currently empty and must bootstrap itself on first start.
-    // TYPEORM_SYNCHRONIZE can also enable this behavior in preview environments.
-    synchronize: isProduction || isEnabled(process.env.TYPEORM_SYNCHRONIZE),
-    ssl: isEnabled(process.env.DATABASE_SSL)
-      ? { rejectUnauthorized: false }
-      : undefined,
+    // This MVP bootstraps empty local and production databases automatically.
+    synchronize:
+      process.env.TYPEORM_SYNCHRONIZE == null
+        ? true
+        : isEnabled(process.env.TYPEORM_SYNCHRONIZE),
+    ssl:
+      isProduction && isEnabled(process.env.DATABASE_SSL)
+        ? { rejectUnauthorized: false }
+        : undefined,
     retryAttempts: 10,
     retryDelay: 3_000,
     logging: isEnabled(process.env.TYPEORM_LOGGING),
