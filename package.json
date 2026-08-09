@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "node apps/api/dist/main.js",
     "dev": "bash ./scripts/dev.sh",
     "dev:parallel": "concurrently \"npm --prefix apps/api run start:dev\" \"npm --prefix apps/web run dev\"",
     "build": "turbo run build",
