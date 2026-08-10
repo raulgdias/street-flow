@@ -1,9 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
 import { ProductEntity } from './entities/product.entity';
 import { UserEntity, UserRole } from './entities/user.entity';
+import { OrderEntity, OrderStatus } from './entities/order.entity';
+import { OrderItemEntity } from './entities/order-item.entity';
+import {
+  OutboxEventEntity,
+  OutboxEventType,
+} from './entities/outbox-event.entity';
 
 export interface CreateProductInput {
   name: string;
@@ -28,6 +34,14 @@ export interface LoginInput {
   password: string;
 }
 
+export interface CreateOrderInput {
+  userId: string;
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+}
+
 @Injectable()
 export class StoreService {
   constructor(
@@ -36,6 +50,7 @@ export class StoreService {
     @InjectRepository(UserEntity)
     private readonly users: Repository<UserEntity>,
     private readonly authService: AuthService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private normalizePromoPrice(price: number, rawPromoPrice: unknown) {
@@ -50,6 +65,26 @@ export class StoreService {
       return undefined;
     }
     return promoPrice;
+  }
+
+  private async ensureDemoUser(
+    id: string,
+    name: string,
+    email: string,
+    role: UserRole,
+  ) {
+    const existingUser = await this.users.findOneBy({ id });
+    if (existingUser) return existingUser;
+
+    return this.users.save(
+      this.users.create({
+        id,
+        name,
+        email,
+        role,
+        passwordHash: 'demo-account',
+      }),
+    );
   }
 
   private validateImageUrl(
@@ -175,20 +210,32 @@ export class StoreService {
     const { email, password } = payload;
 
     if (email === 'admin@streetflow.com' && password === 'admin123') {
-      return {
-        id: 'demo-admin',
-        name: 'Admin Street Flow',
+      const user = await this.ensureDemoUser(
+        '00000000-0000-4000-8000-000000000001',
+        'Admin Street Flow',
         email,
-        role: UserRole.ADMIN,
+        UserRole.ADMIN,
+      );
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       };
     }
 
     if (email === 'user@streetflow.com' && password === 'user123') {
-      return {
-        id: 'demo-user',
-        name: 'User Street Flow',
+      const user = await this.ensureDemoUser(
+        '00000000-0000-4000-8000-000000000002',
+        'User Street Flow',
         email,
-        role: UserRole.USER,
+        UserRole.USER,
+      );
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       };
     }
 
@@ -209,5 +256,114 @@ export class StoreService {
       return null;
     }
     return { id: user.id, name: user.name, email: user.email, role: user.role };
+  }
+
+  async createOrder(payload: CreateOrderInput) {
+    if (!Array.isArray(payload.items) || payload.items.length === 0) {
+      throw new BadRequestException('O pedido precisa conter ao menos um item');
+    }
+
+    const requestedItems = new Map<string, number>();
+    for (const item of payload.items) {
+      const quantity = Number(item.quantity);
+      if (!item?.productId || !Number.isInteger(quantity) || quantity <= 0) {
+        throw new BadRequestException('Os itens do pedido são inválidos');
+      }
+      requestedItems.set(
+        item.productId,
+        (requestedItems.get(item.productId) ?? 0) + quantity,
+      );
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const user = await manager.findOne(UserEntity, {
+        where: { id: payload.userId },
+      });
+      if (!user) throw new BadRequestException('Cliente não encontrado');
+
+      const products = await manager.find(ProductEntity, {
+        where: { id: In([...requestedItems.keys()]) },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (products.length !== requestedItems.size) {
+        throw new BadRequestException(
+          'Um ou mais produtos não foram encontrados',
+        );
+      }
+
+      const orderItems = products.map((product) => {
+        const quantity = requestedItems.get(product.id)!;
+        if (!product.isActive || product.stock < quantity) {
+          throw new BadRequestException(
+            `Produto indisponível: ${product.name}`,
+          );
+        }
+        return {
+          product,
+          quantity,
+          unitPrice: product.promoPrice ?? product.price,
+        };
+      });
+      const total = orderItems.reduce(
+        (sum, item) => sum + Number(item.unitPrice) * item.quantity,
+        0,
+      );
+
+      const order = await manager.save(
+        manager.create(OrderEntity, {
+          user,
+          total,
+          status: OrderStatus.PENDING,
+        }),
+      );
+      await manager.save(
+        products.map((product) => {
+          product.stock -= requestedItems.get(product.id)!;
+          return product;
+        }),
+      );
+      await manager.save(
+        orderItems.map((item) =>
+          manager.create(OrderItemEntity, {
+            order,
+            product: item.product,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          }),
+        ),
+      );
+
+      const eventPayload = {
+        eventId: undefined as string | undefined,
+        eventType: OutboxEventType.ORDER_CREATED,
+        occurredAt: new Date().toISOString(),
+        version: 1,
+        order: {
+          id: order.id,
+          userId: user.id,
+          total,
+          status: order.status,
+          items: orderItems.map((item) => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            unitPrice: Number(item.unitPrice),
+          })),
+        },
+      };
+      const event = manager.create(OutboxEventEntity, {
+        aggregateId: order.id,
+        eventType: OutboxEventType.ORDER_CREATED,
+        payload: eventPayload,
+      });
+      event.payload.eventId = event.id;
+      await manager.save(event);
+
+      return {
+        id: order.id,
+        status: order.status,
+        total,
+        createdAt: order.createdAt,
+      };
+    });
   }
 }

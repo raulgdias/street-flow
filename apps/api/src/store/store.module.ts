@@ -9,6 +9,8 @@ import { CartEntity } from './entities/cart.entity';
 import { CartItemEntity } from './entities/cart-item.entity';
 import { OrderEntity } from './entities/order.entity';
 import { OrderItemEntity } from './entities/order-item.entity';
+import { OutboxEventEntity } from './entities/outbox-event.entity';
+import { OrdersPublisher } from './orders.publisher';
 
 @Module({
   imports: [
@@ -20,10 +22,11 @@ import { OrderItemEntity } from './entities/order-item.entity';
       CartItemEntity,
       OrderEntity,
       OrderItemEntity,
+      OutboxEventEntity,
     ]),
   ],
   controllers: [StoreController],
-  providers: [StoreService],
+  providers: [StoreService, OrdersPublisher],
   exports: [StoreService],
 })
 export class StoreModule {}

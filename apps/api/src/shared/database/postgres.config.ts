@@ -3,6 +3,7 @@ import { CartItemEntity } from '../../store/entities/cart-item.entity';
 import { CartEntity } from '../../store/entities/cart.entity';
 import { OrderItemEntity } from '../../store/entities/order-item.entity';
 import { OrderEntity } from '../../store/entities/order.entity';
+import { OutboxEventEntity } from '../../store/entities/outbox-event.entity';
 import { ProductEntity } from '../../store/entities/product.entity';
 import { UserEntity } from '../../store/entities/user.entity';
 
@@ -63,6 +64,7 @@ export function postgresConfig(): TypeOrmModuleOptions {
       CartItemEntity,
       OrderEntity,
       OrderItemEntity,
+      OutboxEventEntity,
     ],
     // Synchronization is performed explicitly during bootstrap for clear logs.
     synchronize: false,
