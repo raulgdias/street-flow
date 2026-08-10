@@ -39,6 +39,7 @@ function LoginContent() {
         body: JSON.stringify({ email, password }),
       });
       const data = (await response.json()) as {
+        id?: string;
         role?: string;
         name?: string;
       } | null;
@@ -49,6 +50,7 @@ function LoginContent() {
           data.role === "ADMIN" ? "Admin" : "User",
         );
         localStorage.setItem("streetflow-user", data.name ?? email);
+        localStorage.setItem("streetflow-user-id", data.id ?? "");
         router.push(redirectTo);
         return;
       }

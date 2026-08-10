@@ -77,3 +77,21 @@ A sincronização pode ser desabilitada explicitamente com
 - O frontend consome a API para carregar o catálogo e o carrinho.
 - Promoções só são aplicadas quando `promoPrice` é menor que `price`.
 - Imagens de produtos são cadastradas exclusivamente por URL HTTP/HTTPS.
+
+## Pedidos e Azure Service Bus
+
+O checkout cria o pedido, seus itens e um evento `PedidoCriado` na tabela
+`outbox_events` em uma única transação do PostgreSQL. Assim, uma indisponibilidade
+temporária do Azure Service Bus não faz o pedido ser perdido.
+
+Após a transação, a API publica os eventos pendentes no tópico configurado. Para
+habilitar essa publicação, configure estas variáveis somente no ambiente da API:
+
+```bash
+SERVICE_BUS_CONNECTION_STRING=<connection-string-do-namespace>
+SERVICE_BUS_ORDERS_TOPIC=pedidos
+```
+
+O tópico deve ser criado no Azure antes da API ser iniciada. Sem a connection
+string, a API continua aceitando pedidos e mantém os eventos pendentes na outbox.
+O consumer da assinatura será implementado separadamente.

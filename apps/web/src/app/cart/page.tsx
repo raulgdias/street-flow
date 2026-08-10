@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { buildApiUrl } from "@/config/environment";
 import {
   fallbackImage,
   formatCurrency,
@@ -69,17 +70,37 @@ export default function CartPage() {
   const removeItem = (id: string) =>
     commitCart(cart.filter((item) => item.id !== id));
 
-  const checkout = () => {
+  const checkout = async () => {
     const role = localStorage.getItem("streetflow-role");
-    if (!role) {
+    const userId = localStorage.getItem("streetflow-user-id");
+    if (!role || !userId) {
       router.push("/login?redirect=/cart");
       return;
     }
 
-    window.alert(
-      "Pedido confirmado! Em breve você receberá os próximos passos por e-mail.",
-    );
-    commitCart([]);
+    try {
+      const response = await fetch(buildApiUrl("/store/orders"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          items: cart.map((item) => ({
+            productId: item.id,
+            quantity: item.quantity,
+          })),
+        }),
+      });
+      if (!response.ok) throw new Error(`Status ${response.status}`);
+
+      window.alert(
+        "Pedido recebido! Em breve você receberá os próximos passos por e-mail.",
+      );
+      commitCart([]);
+    } catch {
+      window.alert(
+        "Não foi possível concluir o pedido agora. Tente novamente em instantes.",
+      );
+    }
   };
 
   return (

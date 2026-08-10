@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   type CreateProductInput,
+  type CreateOrderInput,
   type LoginInput,
   StoreService,
   type UpdateProductInput,
@@ -26,6 +27,11 @@ export class StoreController {
   @Post('products')
   async createProduct(@Body() payload: CreateProductInput) {
     return this.storeService.createProduct(payload);
+  }
+
+  @Post('orders')
+  async createOrder(@Body() payload: CreateOrderInput) {
+    return this.storeService.createOrder(payload);
   }
 
   @Patch('products/:id')
