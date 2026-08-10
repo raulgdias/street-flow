@@ -95,3 +95,19 @@ SERVICE_BUS_ORDERS_TOPIC=pedidos
 O tópico deve ser criado no Azure antes da API ser iniciada. Sem a connection
 string, a API continua aceitando pedidos e mantém os eventos pendentes na outbox.
 O consumer da assinatura será implementado separadamente.
+
+## Worker de pedidos
+
+`apps/order-worker` consome a assinatura `processamento-pedidos`. Ao receber
+`PedidoCriado`, ele atualiza o pedido `PENDING` para `COMPLETED` e confirma a
+mensagem somente após a transação do banco concluir. O processamento é
+idempotente: receber novamente um pedido já concluído não cria outro efeito.
+
+Para executá-lo localmente:
+
+```bash
+export SERVICE_BUS_CONNECTION_STRING='<connection-string-do-namespace>'
+export SERVICE_BUS_ORDERS_TOPIC='pedidos'
+export SERVICE_BUS_ORDERS_SUBSCRIPTION='processamento-pedidos'
+npm run dev:worker
+```
