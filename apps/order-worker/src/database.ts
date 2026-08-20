@@ -14,7 +14,7 @@ export function createWorkerDataSource(): DataSource {
 
   return new DataSource({
     type: "postgres",
-    ...(isProduction
+    ...(databaseUrl
       ? { url: databaseUrl }
       : {
           host: "localhost",

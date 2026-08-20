@@ -14,6 +14,9 @@
     "dev": "bash ./scripts/dev.sh",
     "dev:parallel": "concurrently \"npm --prefix apps/api run start:dev\" \"npm --prefix apps/web run dev\"",
     "dev:worker": "npm --prefix apps/order-worker run start:dev",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs --follow",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""

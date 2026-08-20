@@ -1,17 +1,69 @@
-version: "3.9"
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: street-flow-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: streetflow
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Pa@4816905
+      POSTGRES_DB: ${POSTGRES_DB:-streetflow}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}@postgres:5432/${POSTGRES_DB:-streetflow}
+      DATABASE_SSL: "false"
+      TYPEORM_SYNCHRONIZE: "true"
+      SERVICE_BUS_CONNECTION_STRING: ${SERVICE_BUS_API_CONNECTION_STRING:-}
+      SERVICE_BUS_ORDERS_TOPIC: ${SERVICE_BUS_ORDERS_TOPIC:-pedidos}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ""
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: http://api:3000
+    depends_on:
+      - api
+    ports:
+      - "3001:80"
+
+  order-worker:
+    build:
+      context: .
+      dockerfile: apps/order-worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}@postgres:5432/${POSTGRES_DB:-streetflow}
+      DATABASE_SSL: "false"
+      SERVICE_BUS_CONNECTION_STRING: ${SERVICE_BUS_WORKER_CONNECTION_STRING:?Defina SERVICE_BUS_WORKER_CONNECTION_STRING no arquivo .env para iniciar o worker}
+      SERVICE_BUS_ORDERS_TOPIC: ${SERVICE_BUS_ORDERS_TOPIC:-pedidos}
+      SERVICE_BUS_ORDERS_SUBSCRIPTION: ${SERVICE_BUS_ORDERS_SUBSCRIPTION:-processamento-pedidos}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:
