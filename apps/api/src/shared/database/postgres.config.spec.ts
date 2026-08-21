@@ -11,9 +11,20 @@ describe('postgresConfig', () => {
     process.env.TYPEORM_SYNCHRONIZE = originalSynchronize;
   });
 
-  it('uses the local PostgreSQL server outside production', () => {
+  it('uses DATABASE_URL when configured outside production', () => {
     process.env.NODE_ENV = 'development';
-    process.env.DATABASE_URL = 'postgresql://should-not-be-used';
+    process.env.DATABASE_URL = 'postgresql://docker-network/streetflow';
+
+    expect(postgresConfig()).toMatchObject({
+      url: 'postgresql://docker-network/streetflow',
+    });
+    expect(postgresConfig()).not.toHaveProperty('host');
+    expect(postgresConfig()).toHaveProperty('synchronize', false);
+  });
+
+  it('uses the local PostgreSQL server when DATABASE_URL is absent', () => {
+    process.env.NODE_ENV = 'development';
+    delete process.env.DATABASE_URL;
 
     expect(postgresConfig()).toMatchObject({
       host: 'localhost',

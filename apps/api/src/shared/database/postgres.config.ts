@@ -43,7 +43,7 @@ export function postgresConfig(): TypeOrmModuleOptions {
     );
   }
 
-  const connection = isProduction
+  const connection = databaseUrl
     ? { url: databaseUrl }
     : {
         host: 'localhost',
