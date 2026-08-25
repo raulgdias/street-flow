@@ -112,8 +112,10 @@ com somente `Listen`.
 Para PostgreSQL em produção, prefira Managed Identity: `DB_AUTH_MODE=managed-identity`,
 `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DATABASE_SSL=true`. Nesse modo,
 `DATABASE_URL` não é usada nem contém senha. A API e o worker obtêm tokens
-temporários do Microsoft Entra ID. O modo com `DATABASE_URL` permanece somente
-como compatibilidade e rollback durante a migração.
+temporários do Microsoft Entra ID. No ambiente atual, `DB_NAME=postgres`; esse
+valor precisa corresponder ao banco usado pela configuração anterior. O modo com
+`DATABASE_URL` permanece somente como compatibilidade e rollback durante a
+migração.
 
 ### Pipeline de containers
 

@@ -83,13 +83,13 @@ describe('postgresConfig', () => {
     process.env.DB_AUTH_MODE = 'managed-identity';
     process.env.DB_HOST = 'street-flow-db.postgres.database.azure.com';
     process.env.DB_PORT = '5432';
-    process.env.DB_NAME = 'wedding';
+    process.env.DB_NAME = 'postgres';
     process.env.DB_USER = 'streetflow-api';
 
     expect(postgresConfig()).toMatchObject({
       host: 'street-flow-db.postgres.database.azure.com',
       port: 5432,
-      database: 'wedding',
+      database: 'postgres',
       username: 'streetflow-api',
     });
     expect(postgresConfig()).not.toHaveProperty('url');

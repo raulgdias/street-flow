@@ -62,7 +62,7 @@ export function postgresConfig(): TypeOrmModuleOptions {
     throw new Error('DATABASE_URL é obrigatória em produção');
   }
 
-  if (isProduction && databaseUrl) {
+  if (isProduction && databaseUrl && !managedIdentity) {
     const parsedUrl = new URL(databaseUrl);
     if (
       parsedUrl.protocol !== 'postgres:' &&
