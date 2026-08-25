@@ -14,9 +14,7 @@ env:
   ACR_NAME: ${{ vars.ACR_NAME || 'streetflowregistry' }}
   ACR_LOGIN_SERVER: ${{ vars.ACR_NAME || 'streetflowregistry' }}.azurecr.io
   AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'street-flow-rg' }}
-  CONTAINER_APP_API_NAME: ${{ vars.CONTAINER_APP_API_NAME || 'streetflow-api' }}
-  CONTAINER_APP_WEB_NAME: ${{ vars.CONTAINER_APP_WEB_NAME || 'streetflow-web' }}
-  CONTAINER_APP_WORKER_NAME: ${{ vars.CONTAINER_APP_WORKER_NAME || 'streetflow-order-worker' }}
+  AKS_NAME: ${{ vars.AKS_NAME || 'streetflow-aks' }}
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
@@ -89,19 +87,25 @@ jobs:
             ${{ env.ACR_LOGIN_SERVER }}/streetflow-order-worker:${{ env.IMAGE_TAG }}
             ${{ env.ACR_LOGIN_SERVER }}/streetflow-order-worker:latest
 
-      - name: Deploy new revisions
+      - name: Configure AKS access
         run: |
-          az containerapp update \
-            --name "$CONTAINER_APP_API_NAME" \
+          az aks get-credentials \
             --resource-group "$AZURE_RESOURCE_GROUP" \
-            --image "$ACR_LOGIN_SERVER/streetflow-api:$IMAGE_TAG"
+            --name "$AKS_NAME" \
+            --admin \
+            --overwrite-existing
 
-          az containerapp update \
-            --name "$CONTAINER_APP_WEB_NAME" \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --image "$ACR_LOGIN_SERVER/streetflow-web:$IMAGE_TAG"
+      - name: Deploy to AKS
+        run: |
+          kubectl apply -k k8s/base
 
-          az containerapp update \
-            --name "$CONTAINER_APP_WORKER_NAME" \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --image "$ACR_LOGIN_SERVER/streetflow-order-worker:$IMAGE_TAG"
+          kubectl -n streetflow set image deployment/streetflow-api \
+            api="$ACR_LOGIN_SERVER/streetflow-api:$IMAGE_TAG"
+          kubectl -n streetflow set image deployment/streetflow-web \
+            web="$ACR_LOGIN_SERVER/streetflow-web:$IMAGE_TAG"
+          kubectl -n streetflow set image deployment/streetflow-worker \
+            worker="$ACR_LOGIN_SERVER/streetflow-order-worker:$IMAGE_TAG"
+
+          kubectl -n streetflow rollout status deployment/streetflow-api --timeout=5m
+          kubectl -n streetflow rollout status deployment/streetflow-web --timeout=5m
+          kubectl -n streetflow rollout status deployment/streetflow-worker --timeout=5m
