@@ -105,10 +105,15 @@ disponibilidade que não devem depender de um container de aplicação.
 | `streetflow-api` | `streetflow-api` | Internal | 3000 | mínimo 1 |
 | `streetflow-order-worker` | `streetflow-order-worker` | Disabled | — | mínimo 1 |
 
-No `streetflow-web`, defina `API_UPSTREAM=http://streetflow-api`. No `api` e no
-`worker`, use segredos para `DATABASE_URL` e as connection strings do Service
-Bus. A API recebe a chave com somente `Send`; o worker recebe a chave com
-somente `Listen`.
+No `streetflow-web`, defina `API_UPSTREAM=http://streetflow-api`. A API recebe
+a chave do Service Bus com somente `Send`; o worker recebe uma chave separada
+com somente `Listen`.
+
+Para PostgreSQL em produção, prefira Managed Identity: `DB_AUTH_MODE=managed-identity`,
+`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DATABASE_SSL=true`. Nesse modo,
+`DATABASE_URL` não é usada nem contém senha. A API e o worker obtêm tokens
+temporários do Microsoft Entra ID. O modo com `DATABASE_URL` permanece somente
+como compatibilidade e rollback durante a migração.
 
 ### Pipeline de containers
 
@@ -133,17 +138,20 @@ npm run build
 
 ## Banco de dados
 
-Em desenvolvimento, a API conecta ao PostgreSQL local com estas configurações:
+Em desenvolvimento, o Docker Compose fornece a `DATABASE_URL` automaticamente
+para API e worker. Fora do Compose, configure uma `DATABASE_URL` local ou as
+variáveis `POSTGRES_*` em seu ambiente de desenvolvimento.
 
-- Host: `localhost`
-- Porta: `5432`
-- Banco: `streetflow`
-- Usuário: `postgres`
-- Senha: `Pa@4816905`
+Em produção (`NODE_ENV=production`), há dois modos:
 
-Em produção (`NODE_ENV=production`), a conexão usa exclusivamente
-`DATABASE_URL`. O TypeORM sincroniza automaticamente as entidades e cria as
-tabelas de usuários, produtos, carrinhos e pedidos na inicialização.
+- `DATABASE_URL`: compatibilidade temporária, com credencial armazenada em
+  secret.
+- `DB_AUTH_MODE=managed-identity`: modo recomendado; requer `DB_HOST`,
+  `DB_PORT`, `DB_NAME`, `DB_USER` e uma Managed Identity com papel criado no
+  Azure Database for PostgreSQL. Não há senha nem connection string persistida.
+
+O TypeORM não sincroniza o schema automaticamente em produção quando
+`TYPEORM_SYNCHRONIZE=false` está definido.
 
 A sincronização pode ser desabilitada explicitamente com
 `TYPEORM_SYNCHRONIZE=false`. Para provedores de produção que exigem SSL, use
