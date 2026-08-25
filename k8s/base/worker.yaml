@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streetflow-worker
+  namespace: streetflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: streetflow-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: streetflow-worker
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: streetflow-worker
+      containers:
+        - name: worker
+          image: streetflowregistry.azurecr.io/streetflow-order-worker:latest
+          imagePullPolicy: Always
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DB_AUTH_MODE
+              value: managed-identity
+            - name: DB_HOST
+              value: street-flow-db.postgres.database.azure.com
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: postgres
+            - name: DB_USER
+              value: streetflow-aks-worker
+            - name: DATABASE_SSL
+              value: "true"
+            - name: SERVICE_BUS_ORDERS_TOPIC
+              value: pedidos
+            - name: SERVICE_BUS_ORDERS_SUBSCRIPTION
+              value: processamento-pedidos
+            - name: SERVICE_BUS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: streetflow-runtime-secrets
+                  key: service-bus-worker-connection
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

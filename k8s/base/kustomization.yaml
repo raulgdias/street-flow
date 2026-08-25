@@ -1,0 +1,7 @@
+resources:
+  - namespace.yaml
+  - service-accounts.yaml
+  - api.yaml
+  - web.yaml
+  - worker.yaml
+  - ingress.yaml
